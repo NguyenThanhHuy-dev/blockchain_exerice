@@ -1,0 +1,280 @@
+/* --- Thiết lập cơ bản & Biến màu --- */
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+
+  /* Bảng màu hiện đại (Dark Mode) */
+  --color-bg: #121212;         /* Nền chính (đen nhạt) */
+  --color-bg-secondary: #1e1e1e; /* Nền thẻ (card) */
+  --color-border: #333333;     /* Viền */
+  --color-text-primary: #e0e0e0; /* Chữ chính */
+  --color-text-secondary: #aaaaaa; /* Chữ phụ */
+  --color-primary: #6a5af9;     /* Màu nhấn (tím/xanh) */
+  --color-primary-hover: #5a4af9;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+/* --- Layout chính của ứng dụng --- */
+.app-container {
+  max-width: 1280px; /* Tăng chiều rộng tối đa một chút */
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* --- Header --- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  font-size: 2.2em;
+  line-height: 1.1;
+  margin: 0;
+  color: #fff;
+}
+
+/* --- Nhóm điều khiển ví (Info + Nút Đăng xuất) --- */
+.wallet-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; 
+  gap: 1rem; 
+}
+
+.wallet-info {
+  background-color: var(--color-bg-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.9em;
+}
+.wallet-info span {
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-left: 0.5rem;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* --- Layout nội dung chính (Grid 2 cột) --- */
+.main-content {
+  display: grid;
+  /* Cột 1 (danh sách) rộng 3 phần, Cột 2 (chuyển) rộng 2 phần */
+  grid-template-columns: 3fr 2fr;
+  gap: 2rem;
+}
+
+/* --- Kiểu dáng "Card" (Thẻ) --- */
+.card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+  font-size: 1.5em;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+/* --- Kiểu dáng Nút (Button) --- */
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.7em 1.3em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s;
+  
+  /* Màu chính */
+  background-color: var(--color-primary);
+  color: white;
+}
+button:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Nút kết nối ví (to hơn) */
+.connect-btn {
+  padding: 0.8em 1.5em;
+  font-size: 1.1em;
+}
+
+/* Nút Đăng xuất (màu đỏ) */
+.disconnect-btn {
+  background-color: #b91c1c; /* Màu đỏ (Tailwind Red-700) */
+  color: white;
+}
+.disconnect-btn:hover {
+  background-color: #dc2626; /* Đỏ sáng hơn khi hover (Red-600) */
+  border-color: #b91c1c;
+}
+
+/* --- Kiểu dáng Form & Input --- */
+.transfer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transfer-form label {
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  margin-bottom: -0.5rem; /* Kéo label lại gần input */
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1em;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-sizing: border-box; /* Quan trọng để padding không làm vỡ layout */
+}
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* --- CSS CHO DANH SÁCH NFT (DẠNG LƯỚI ẢNH) --- */
+.nft-list {
+  display: grid;
+  /* Hiển thị 2 cột card ảnh */
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; /* Khoảng cách giữa các card ảnh */
+  
+  margin-top: 1.5rem;
+  max-height: 800px; 
+  overflow-y: auto; /* Thêm thanh cuộn nếu danh sách quá dài */
+  padding: 5px; /* Thêm padding nhỏ để thanh cuộn không quá sát */
+}
+
+/* CSS CHO MỘT CARD NFT (BAO GỒM ẢNH VÀ TEXT) */
+.nft-item {
+  background-color: var(--color-bg); /* Nền tối hơn nền card chính */
+  border: 1px solid var(--color-border);
+  border-radius: 12px; /* Bo góc card */
+  overflow: hidden; /* Đảm bảo ảnh bo góc theo card */
+  
+  display: flex;
+  flex-direction: column; /* Ảnh ở trên, text ở dưới */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.nft-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* CSS CHO ẢNH NFT */
+.nft-image {
+  width: 100%;
+  height: 250px; /* Đặt chiều cao cố định cho ảnh */
+  object-fit: cover; /* Ảnh sẽ tự crop để vừa khung, không bị méo */
+  background-color: #333; /* Màu nền trong khi chờ tải ảnh */
+}
+
+/* CSS CHO PHẦN THÔNG TIN BÊN DƯỚI ẢNH */
+.nft-info {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nft-info strong {
+  color: #fff; /* Tên NFT (ví dụ: "My First NFT") */
+  font-size: 1.1em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Thêm ... nếu tên quá dài */
+}
+
+.nft-info span {
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  font-family: 'Courier New', Courier, monospace; /* Kiểu chữ cho Token ID */
+}
+
+/* Trạng thái rỗng (chưa tải/không có NFT) */
+.empty-state {
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-top: 2rem;
+  /* Đảm bảo nó chiếm cả 2 cột của grid */
+  grid-column: 1 / -1;
+}
+
+
+/* --- CSS RESPONSIVE (Cho màn hình nhỏ) --- */
+@media (max-width: 900px) {
+  /* Chuyển layout chính về 1 cột */
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Chuyển danh sách NFT về 1 cột */
+  .nft-list {
+    grid-template-columns: 1fr;
+    max-height: 500px; /* Giảm chiều cao trên di động */
+  }
+
+  .nft-image {
+    height: 300px; /* Tăng chiều cao ảnh khi chỉ có 1 cột */
+  }
+}
+
+/* ... (Toàn bộ CSS cũ của bạn giữ nguyên) ... */
+
+/* --- THÊM CSS MỚI VÀO CUỐI FILE --- */
+
+/* MỚI: Wrapper cho cột bên phải */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Khoảng cách giữa card "Chuyển" và card "Mint" */
+}
+
+/* MỚI: CSS cho form mint (tương tự transfer-form) */
+.mint-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mint-form label {
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+  margin-bottom: -0.5rem;
+}
