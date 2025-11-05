@@ -54,31 +54,26 @@ blockchain_exercise/hardhat-erc721/
     │   └── index.css
     ├── package.json
     └── index.html
-
-🧭 Hướng dẫn Cài đặt và Chạy Dự án
-🪄 Bước 1: Chuẩn bị môi trường
+```
+##  Hướng dẫn Cài đặt và Chạy Dự án
+### 🪄 Bước 1: Chuẩn bị môi trường
 
 Cài Node.js (phiên bản ≥ 18).
 Kiểm tra bằng:
-
 node -v
-
-
 Cài đặt ví MetaMask trên trình duyệt (Chrome, Firefox, Brave, ...).
-
 Clone dự án:
-
 git clone https://github.com/<your-repo>/hardhat-erc721.git
 cd hardhat-erc721
 
-⚙️ Bước 2: Cài đặt Backend (Hardhat)
+### ⚙️ Bước 2: Cài đặt Backend (Hardhat)
 # Di chuyển vào thư mục backend
 cd hardhat-v2-project
 
 # Cài đặt các thư viện cần thiết
 npm install
 
-💻 Bước 3: Cài đặt Frontend (React)
+### 💻 Bước 3: Cài đặt Frontend (React)
 # Mở terminal khác và di chuyển vào thư mục frontend
 cd nft-frontend
 
@@ -88,8 +83,8 @@ npm install
 # Copy file ABI từ backend sang React
 cp ../hardhat-v2-project/artifacts/contracts/MyNFT.sol/MyNFT.json ./src/
 
-🚀 Chạy Dự án
-🧱 Bước 4: Khởi chạy Blockchain cục bộ
+## 🚀 Chạy Dự án
+### 🧱 Bước 4: Khởi chạy Blockchain cục bộ
 
 Mở terminal đầu tiên và chạy:
 
@@ -102,7 +97,7 @@ http://127.0.0.1:8545
 
 ⚠️ Lưu ý: Giữ terminal này luôn mở trong suốt quá trình chạy dự án.
 
-📦 Bước 5: Deploy Smart Contract
+### 📦 Bước 5: Deploy Smart Contract
 
 Mở terminal thứ hai:
 
@@ -122,7 +117,7 @@ MyNFT deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 
 Hãy copy địa chỉ contract này (ví dụ: 0x5FbD...aa3).
 
-🧭 Bước 6: Cập nhật địa chỉ Contract trong Frontend
+### 🧭 Bước 6: Cập nhật địa chỉ Contract trong Frontend
 
 Mở file:
 
@@ -136,7 +131,7 @@ const CONTRACT_ADDRESS = "0x...";
 
 Và thay bằng địa chỉ contract bạn vừa deploy.
 
-🧱 Bước 7: Chuẩn bị Metadata (IPFS)
+### 🧱 Bước 7: Chuẩn bị Metadata (IPFS)
 
 Truy cập Pinata.cloud
  hoặc dịch vụ tương tự.
@@ -160,7 +155,7 @@ Token URI sẽ là:
 
 ipfs://Qm...xyz
 
-🌐 Bước 8: Chạy Ứng dụng Web
+### 🌐 Bước 8: Chạy Ứng dụng Web
 
 Mở terminal frontend:
 
@@ -171,7 +166,7 @@ npm run dev
 Giao diện sẽ chạy tại:
 👉 http://localhost:5173
 
-🔗 Bước 9: Kết nối MetaMask với Mạng Local
+### 🔗 Bước 9: Kết nối MetaMask với Mạng Local
 
 Mở MetaMask → Add network manually:
 
@@ -189,7 +184,7 @@ Copy private key của Account #0.
 
 Trong MetaMask → Import account → Dán private key.
 
-🎨 Bước 10: Mint NFT Mới
+### 🎨 Bước 10: Mint NFT Mới
 
 Trong ứng dụng web, nhập Token URI:
 
@@ -202,7 +197,7 @@ Xác nhận giao dịch trên MetaMask.
 
 Đợi giao dịch hoàn tất → NFT của bạn sẽ được mint thành công!
 
-👀 Bước 11: Xem & Quản lý NFT
+### 👀 Bước 11: Xem & Quản lý NFT
 
 Nhấn "Tải danh sách NFT" → hiển thị ảnh và metadata NFT bạn sở hữu.
 
@@ -222,7 +217,7 @@ Nhấn "Chuyển NFT" → xác nhận trên MetaMask.
 
 Chuyển sang Account #1 và tải lại danh sách NFT → NFT đã được chuyển thành công ✅
 
-💡 Gợi ý Nâng Cấp
+## 💡 Gợi ý Nâng Cấp
 
 🌐 Deploy lên testnet Sepolia/Base Goerli thay vì mạng local.
 
