@@ -1,256 +1,252 @@
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
-import MyNFT_ABI from './MyNFT.json'; 
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import MyNFT from "./MyNFT.json";
+import Marketplace from "./Marketplace.json";
+import { MYNFT_ADDRESS, MARKETPLACE_ADDRESS } from "./config";
+import './index.css'
 
-// --- CẤU HÌNH (KHÔNG THAY ĐỔI) ---
-const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const CONTRACT_ABI = MyNFT_ABI.abi;
-// ---------------
-
-// --- HÀM HELPER (KHÔNG THAY ĐỔI) ---
+// (Các hàm khác giữ nguyên: resolveIpfsUrl)
 const resolveIpfsUrl = (ipfsUri) => {
-  if (!ipfsUri || !ipfsUri.startsWith('ipfs://')) {
-    return ipfsUri;
-  }
-  const cid = ipfsUri.substring(7);
-  return `https://ipfs.io/ipfs/${cid}`; 
+  if (!ipfsUri || !ipfsUri.startsWith("ipfs://")) return ipfsUri;
+  return `https://ipfs.io/ipfs/${ipfsUri.substring(7)}`;
 };
-// -----------------------------------------------------------
+
 
 function App() {
-  // --- LOGIC STATE (Thêm 2 state MỚI) ---
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
   const [account, setAccount] = useState(null);
-  const [contract, setContract] = useState(null);
   const [myNfts, setMyNfts] = useState([]);
-  const [isFetching, setIsFetching] = useState(false);
-  
-  // State cho việc Transfer
-  const [toAddress, setToAddress] = useState("");
-  const [transferTokenId, setTransferTokenId] = useState("");
-  const [isTransferring, setIsTransferring] = useState(false);
-  
-  // STATE MỚI: Cho việc Mint
-  const [mintTokenURI, setMintTokenURI] = useState("");
-  const [isMinting, setIsMinting] = useState(false);
-  // ------------------------------------
+  const [marketItems, setMarketItems] = useState([]);
+  const [price, setPrice] = useState("");
 
-  // --- HÀM LOGIC (connectWallet, disconnectWallet, useEffect... KHÔNG THAY ĐỔI) ---
-  const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        await window.ethereum.request({ 
-          method: 'wallet_requestPermissions', 
-          params: [{ eth_accounts: {} }] 
-        });
-        const newProvider = new ethers.BrowserProvider(window.ethereum);
-        const newSigner = await newProvider.getSigner();
-        const newAccount = await newSigner.getAddress();
-        const newContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, newSigner);
-        setProvider(newProvider); setSigner(newSigner); setAccount(newAccount); setContract(newContract);
-      } catch (error) { console.error("Lỗi khi yêu cầu quyền kết nối:", error); }
-    } else { alert("Vui lòng cài đặt MetaMask!"); }
-  };
-
-  const disconnectWallet = () => {
-    setProvider(null); setSigner(null); setAccount(null); setContract(null); setMyNfts([]);
-  };
-
+  // (useEffect giữ nguyên)
   useEffect(() => {
-    if (window.ethereum) {
-      const handleAccountsChanged = async (accounts) => {
-        if (accounts.length === 0) {
-          disconnectWallet();
-        } else {
-          const newProvider = new ethers.BrowserProvider(window.ethereum);
-          const newSigner = await newProvider.getSigner();
-          const newAccount = await newSigner.getAddress();
-          const newContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, newSigner);
-          setProvider(newProvider); setSigner(newSigner); setAccount(newAccount); setContract(newContract);
-          setMyNfts([]); 
-        }
-      };
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      return () => { window.ethereum.removeListener('accountsChanged', handleAccountsChanged); };
+    if (!window.ethereum) return;
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length === 0) {
+        console.log("Người dùng đã ngắt kết nối MetaMask.");
+        disconnectWallet(); // Gọi hàm disconnect mới
+      } else if (accounts[0] !== account) {
+        window.location.reload();
+      }
+    };
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    return () => {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, [account]);
+
+  // (connectWallet giữ nguyên)
+  const connectWallet = async () => {
+    if (!window.ethereum) return alert("Vui lòng cài đặt MetaMask!");
+    const [address] = await window.ethereum.request({ method: "eth_requestAccounts" });
+    setAccount(address);
+    await loadMyNFTs(address); 
+    await loadMarketItems();
+  };
+
+  // --- HÀM ĐƯỢC CẬP NHẬT ---
+  // Thêm 'async' và yêu cầu 'wallet_revokePermissions'
+  const disconnectWallet = async () => {
+    // Bước 1: Gửi yêu cầu thu hồi quyền đến MetaMask
+    if (window.ethereum && window.ethereum.request) {
+      try {
+        // Yêu cầu MetaMask "quên" trang web này
+        await window.ethereum.request({
+          method: "wallet_revokePermissions",
+          params: [{ eth_accounts: {} }],
+        });
+        console.log("Đã thu hồi quyền MetaMask.");
+      } catch (error) {
+        // Người dùng có thể từ chối yêu cầu thu hồi, v.v.
+        console.error("Không thể thu hồi quyền:", error);
+      }
     }
-  }, []);
-  
-  const fetchMyNfts = async () => {
-    // ... (Hàm này giữ nguyên, không thay đổi)
-    if (!contract || !account) return;
-    setIsFetching(true);
+
+    // Bước 2: Dọn dẹp state của React (luôn thực hiện)
+    setAccount(null);
     setMyNfts([]);
-    try {
-      const balance = await contract.balanceOf(account);
-      if (balance.toString() === "0") {
-         setIsFetching(false);
-         return;
-      }
-      const nftPromises = [];
-      for (let i = 0; i < balance; i++) {
-        nftPromises.push(
-          (async () => {
-            try {
-              const tokenId = await contract.tokenOfOwnerByIndex(account, i);
-              const tokenURI = await contract.tokenURI(tokenId);
-              const metadataUrl = resolveIpfsUrl(tokenURI);
-              const response = await fetch(metadataUrl);
-              const metadata = await response.json();
-              const imageUrl = resolveIpfsUrl(metadata.image);
-              return { id: tokenId.toString(), name: metadata.name, imageUrl: imageUrl };
-            } catch (error) { return null; }
-          })()
-        );
-      }
-      const resolvedNfts = await Promise.all(nftPromises);
-      const validNfts = resolvedNfts.filter(nft => nft !== null);
-      setMyNfts(validNfts);
-    } catch (error) { console.error("Lỗi khi lấy NFT (Enumerable):", error); }
-    setIsFetching(false);
+    setMarketItems([]);
+    setPrice("");
   };
 
-  const handleTransfer = async () => {
-    // ... (Hàm này giữ nguyên, không thay đổi)
-    if (!contract || !toAddress || !transferTokenId) {
-      alert("Vui lòng nhập Token ID và Địa chỉ nhận");
-      return;
-    }
-    setIsTransferring(true);
-    try {
-      const tx = await contract.safeTransferFrom(account, toAddress, transferTokenId);
-      await tx.wait();
-      alert("Chuyển NFT thành công!");
-      fetchMyNfts();
-    } catch (error) { console.error("Lỗi khi chuyển NFT:", error); alert("Lỗi khi chuyển NFT!"); }
-    setIsTransferring(false);
+  // (getSigner giữ nguyên)
+  const getSigner = async () => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    return await provider.getSigner();
   };
-  
-  // --- HÀM MỚI: XỬ LÝ MINT NFT ---
-  const handleMint = async () => {
-    if (!contract || !mintTokenURI) {
-      alert("Vui lòng nhập Token URI (link file JSON từ IPFS)");
-      return;
-    }
-    setIsMinting(true);
-    try {
-      console.log(`Đang mint NFT với URI: ${mintTokenURI}...`);
-      
-      // Gọi hàm "mintNFT" của contract
-      // Người nhận (recipient) chính là tài khoản đang kết nối (account)
-      const tx = await contract.mintNFT(account, mintTokenURI);
-      
-      console.log("Đang chờ giao dịch...", tx.hash);
-      await tx.wait();
-      
-      console.log("MINT THÀNH CÔNG!");
-      alert("Mint NFT mới thành công!");
-      
-      // Tải lại danh sách NFT sau khi mint
-      fetchMyNfts(); 
-      
-    } catch (error) {
-      console.error("Lỗi khi mint NFT:", error);
-      alert("Lỗi khi mint NFT!");
-    }
-    setIsMinting(false);
-  };
-  // ---------------------------------
 
-  // --- GIAO DIỆN JSX (CẬP NHẬT MAIN CONTENT) ---
+  // (Các hàm logic khác: loadMyNFTs, listNFT, loadMarketItems, buyNFT giữ nguyên)
+  // ... (giữ nguyên code của bạn cho các hàm này) ...
+  // Lấy NFT người dùng sở hữu
+  const loadMyNFTs = async (currentAccount) => {
+    if (!currentAccount) return; 
+    const signer = await getSigner();
+    const nft = new ethers.Contract(MYNFT_ADDRESS, MyNFT.abi, signer);
+    const balance = await nft.balanceOf(currentAccount);
+    const items = [];
+    for (let i = 0; i < balance; i++) {
+      const tokenId = await nft.tokenOfOwnerByIndex(currentAccount, i);
+      const uri = await nft.tokenURI(tokenId);
+      const res = await fetch(resolveIpfsUrl(uri));
+      const metadata = await res.json();
+      items.push({
+        tokenId: tokenId.toString(),
+        name: metadata.name,
+        image: resolveIpfsUrl(metadata.image),
+      });
+    }
+    setMyNfts(items);
+  };
+  // List NFT lên marketplace
+  const listNFT = async (tokenId) => {
+    if (!price) return alert("Nhập giá ETH trước khi list!");
+    const signer = await getSigner();
+    const nft = new ethers.Contract(MYNFT_ADDRESS, MyNFT.abi, signer);
+    const market = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace.abi, signer);
+    const priceWei = ethers.parseEther(price);
+    const tx1 = await nft.approve(MARKETPLACE_ADDRESS, tokenId);
+    await tx1.wait();
+    const tx2 = await market.listItem(MYNFT_ADDRESS, tokenId, priceWei);
+    await tx2.wait();
+    alert(`✅ NFT #${tokenId} đã được list với giá ${price} ETH`);
+    setPrice(""); 
+    await loadMarketItems();
+    await loadMyNFTs(account); 
+  };
+  // Lấy danh sách NFT đang được rao bán
+  const loadMarketItems = async () => {
+    const signer = await getSigner();
+    const market = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace.abi, signer);
+    const nft = new ethers.Contract(MYNFT_ADDRESS, MyNFT.abi, signer);
+    const items = [];
+    for (let i = 1; i <= 10; i++) { 
+      const item = await market.listings(MYNFT_ADDRESS, i);
+      if (item.active) {
+        const uri = await nft.tokenURI(i);
+        const res = await fetch(resolveIpfsUrl(uri));
+        const metadata = await res.json();
+        items.push({
+          tokenId: i,
+          seller: item.seller,
+          price: ethers.formatEther(item.price),
+          image: resolveIpfsUrl(metadata.image),
+          name: metadata.name,
+        });
+      }
+    }
+    setMarketItems(items);
+  };
+  // Mua NFT
+  const buyNFT = async (tokenId, price) => {
+    const signer = await getSigner();
+    const market = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace.abi, signer);
+    const tx = await market.buyItem(MYNFT_ADDRESS, tokenId, { value: ethers.parseEther(price) });
+    await tx.wait();
+    alert(`🎉 Mua NFT #${tokenId} thành công!`);
+    await loadMarketItems();
+    await loadMyNFTs(account); 
+  };
+
+
+  // (Phần JSX return giữ nguyên y hệt)
   return (
-    <div className="app-container">
-      {/* Header (Không thay đổi) */}
-      <header className="app-header">
-        <h1>Ứng dụng Quản lý NFT</h1>
+    <div className="min-h-screen bg-gray-950 text-gray-100 px-6 py-8">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row justify-between items-center mb-10 border-b border-gray-800 pb-4">
+        <h1 className="text-3xl font-bold text-purple-400">NFT Marketplace (ETH Only)</h1>
+        
         {!account ? (
-          <button className="connect-btn" onClick={connectWallet}>
-            Kết nối ví MetaMask
+          <button
+            onClick={connectWallet}
+            className="mt-4 md:mt-0 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-5 rounded-lg shadow-md transition"
+          >
+            Kết nối MetaMask
           </button>
         ) : (
-          <div className="wallet-controls"> 
-            <div className="wallet-info">
-              <strong>Đã kết nối:</strong>
-              <span>{`${account.substring(0, 6)}...${account.substring(account.length - 4)}`}</span>
-            </div>
-            <button className="disconnect-btn" onClick={disconnectWallet}>
+          <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
+            <p className="text-sm text-gray-300">
+              Đang đăng nhập: <span className="text-purple-400 font-mono text-xs">{account}</span>
+            </p>
+            <button
+              onClick={disconnectWallet} // Nút này giờ sẽ gọi hàm async mới
+              className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition"
+            >
               Đăng xuất
             </button>
           </div>
         )}
       </header>
 
-      {/* Main Content (Cập nhật) */}
+      {/* Nội dung chính (Giữ nguyên) */}
       {account && (
-        <main className="main-content">
-          
-          {/* Cột 1: Danh sách NFT (Không thay đổi) */}
-          <section className="card">
-            <h2>NFT Của Tôi (Enumerable)</h2>
-            <button onClick={fetchMyNfts} disabled={isFetching}>
-              {isFetching ? "Đang tải..." : "Tải danh sách NFT"}
-            </button>
-            <div className="nft-list">
-              {myNfts.length > 0 ? (
-                myNfts.map(nft => (
-                  <div key={nft.id} className="nft-item">
-                    <img src={nft.imageUrl} alt={nft.name} className="nft-image" />
-                    <div className="nft-info">
-                      <strong>{nft.name}</strong> 
-                      <span>Token ID: {nft.id}</span>
-                    </div>
+        //... toàn bộ JSX của bạn ...
+        <main className="space-y-12">
+          <section>
+            <h2 className="text-2xl font-semibold mb-4 text-purple-300">🎨 NFT Của Tôi</h2>
+            {myNfts.length === 0 ? (
+              <p className="text-gray-500 italic">Không có NFT nào.</p>
+            ) : (
+              <div className="flex overflow-x-auto space-x-4 pb-3">
+                {myNfts.map((nft) => (
+                  <div
+                    key={nft.tokenId}
+                    className="bg-gray-900 border border-gray-800 rounded-xl shadow-md p-4 w-64 flex-shrink-0"
+                  >
+                    <img
+                      src={nft.image}
+                      alt={nft.name}
+                      className="rounded-lg mb-3 h-56 w-full object-cover"
+                    />
+                    <h3 className="text-lg font-semibold truncate">{nft.name}</h3>
+                    <input
+                      type="text"
+                      placeholder="Giá (ETH)"
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="mt-2 w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
+                    />
+                    <button
+                      onClick={() => listNFT(nft.tokenId)}
+                      className="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg transition"
+                    >
+                      List NFT
+                    </button>
                   </div>
-                ))
-              ) : (
-                <p className="empty-state">
-                  {isFetching ? "Đang tải metadata..." : "Bạn không có NFT nào (hoặc chưa tải)."}
-                </p>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
-          
-          {/* Cột 2: SẼ CHỨA 2 CARD (TRANSFER VÀ MINT) */}
-          {/* DÙNG MỘT THẺ DIV "sidebar" MỚI ĐỂ BỌC CỘT 2 */}
-          <div className="sidebar">
-            {/* Card 2.1: Chuyển NFT (Không thay đổi) */}
-            <section className="card">
-              <h2>Chuyển NFT</h2>
-              <div className="transfer-form">
-                <label>Token ID:</label>
-                <input 
-                  type="text"
-                  placeholder="Token ID (ví dụ: 1)"
-                  onChange={(e) => setTransferTokenId(e.target.value)}
-                />
-                <label>Địa chỉ người nhận:</label>
-                <input 
-                  type="text"
-                  placeholder="Địa chỉ (0x...)"
-                  onChange={(e) => setToAddress(e.target.value)}
-                />
-                <button onClick={handleTransfer} disabled={isTransferring}>
-                  {isTransferring ? "Đang chuyển..." : "Xác nhận chuyển"}
-                </button>
+          <section>
+            <h2 className="text-2xl font-semibold mb-4 text-purple-300">🛒 Marketplace</h2>
+            {marketItems.length === 0 ? (
+              <p className="text-gray-500 italic">Chưa có NFT nào được rao bán.</p>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {marketItems.map((item) => (
+                  <div
+                    key={item.tokenId}
+                    className="bg-gray-900 border border-gray-800 rounded-xl shadow-md p-4"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="rounded-lg mb-3 h-56 w-full object-cover"
+                    />
+                    <h3 className="text-lg font-semibold">{item.name}</h3>
+                    <p className="text-sm text-gray-400">Giá: {item.price} ETH</p>
+                    <p className="text-sm text-gray-500">
+                      Người bán: {item.seller.substring(0, 6)}...
+                    </p>
+                    <button
+                      onClick={() => buyNFT(item.tokenId, item.price)}
+                      className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition"
+                    >
+                      Mua
+                    </button>
+                  </div>
+                ))}
               </div>
-            </section>
-
-            {/* CARD MỚI: Mint NFT */}
-            <section className="card">
-              <h2>Mint NFT Mới</h2>
-              <div className="mint-form">
-                <label>Token URI (JSON):</label>
-                <input 
-                  type="text"
-                  placeholder="ipfs://Qm..."
-                  onChange={(e) => setMintTokenURI(e.target.value)}
-                />
-                <button onClick={handleMint} disabled={isMinting}>
-                  {isMinting ? "Đang mint..." : "Xác nhận Mint"}
-                </button>
-              </div>
-            </section>
-          </div> {/* Kết thúc thẻ div "sidebar" */}
-
+            )}
+          </section>
         </main>
       )}
     </div>

@@ -1,19 +1,15 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  // Lấy ContractFactory
+  console.log("Triển khai MyNFT...");
   const MyNFT = await ethers.getContractFactory("MyNFT");
-
-  // Deploy
-  console.log("Đang triển khai MyNFT...");
-  // Lệnh "await deploy()" trong Ethers v6 đã tự động chờ deploy xong
   const myNFT = await MyNFT.deploy();
+  console.log(`✅ MyNFT: ${myNFT.target}`);
 
-  // 1. DÒNG NÀY BỊ LỖI -> XÓA NÓ ĐI
-  // await myNFT.deployed(); 
-
-  // 2. ĐỊA CHỈ TRONG Ethers v6 LÀ ".target" (không phải ".address")
-  console.log(`Contract MyNFT đã được triển khai tại địa chỉ: ${myNFT.target}`);
+  console.log("Triển khai Marketplace...");
+  const Marketplace = await ethers.getContractFactory("Marketplace");
+  const market = await Marketplace.deploy(250); // 2.5% phí
+  console.log(`✅ Marketplace: ${market.target}`);
 }
 
 main().catch((error) => {
